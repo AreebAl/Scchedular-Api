@@ -1,4 +1,4 @@
-package com.example.scheduler.service;
+package com.amfk.starfish.sync.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
