@@ -18,6 +18,7 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class MasterServiceClient {
@@ -29,8 +30,8 @@ public class MasterServiceClient {
     @Value("${master.service.base.url}")
     private String baseUrl;
     
-    @Value("${master.service.api.key:}")
-    private String apiKey;
+    @Value("${master.service.bearer.token}")
+    private String bearerToken;
     
     @Value("${master.service.timeout:30000}")
     private int timeout;
@@ -45,46 +46,116 @@ public class MasterServiceClient {
         backoff = @Backoff(delay = 1000, multiplier = 2)
     )
     public List<SiteDto> getSites() {
-        String url = baseUrl + "/api/sites";
-        logger.info("Fetching sites from master service: {}", url);
+        String url = baseUrl + "/amsp/api/masterdata/v1/sites";
+        logger.info("Fetching sites from Master Service: {}", url);
         
         try {
-            HttpHeaders headers = new HttpHeaders();
-            if (apiKey != null && !apiKey.isEmpty()) {
-                headers.set("X-API-Key", apiKey);
-            }
-            headers.set("Content-Type", "application/json");
-            
+            HttpHeaders headers = createHeaders();
             HttpEntity<String> entity = new HttpEntity<>(headers);
             
-            ResponseEntity<List<SiteDto>> response = restTemplate.exchange(
+            ResponseEntity<List<Map<String, Object>>> response = restTemplate.exchange(
                 url,
                 HttpMethod.GET,
                 entity,
-                new ParameterizedTypeReference<List<SiteDto>>() {}
+                new ParameterizedTypeReference<List<Map<String, Object>>>() {}
             );
             
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                logger.info("Successfully fetched {} sites from master service", response.getBody().size());
-                return response.getBody();
+                logger.info("Successfully fetched {} sites from Master Service", response.getBody().size());
+                
+                // Convert Map to SiteDto objects
+                List<SiteDto> sites = response.getBody().stream()
+                    .map(this::convertToSiteDto)
+                    .toList();
+                
+                return sites;
             } else {
-                logger.warn("Master service returned non-success status: {}", response.getStatusCode());
+                logger.warn("Master Service returned non-success status: {}", response.getStatusCode());
                 return List.of();
             }
             
         } catch (HttpClientErrorException e) {
-            logger.error("Client error while fetching sites from master service: {}", e.getMessage());
+            logger.error("Client error while fetching sites from Master Service: {}", e.getMessage());
             throw e;
         } catch (HttpServerErrorException e) {
-            logger.error("Server error while fetching sites from master service: {}", e.getMessage());
+            logger.error("Server error while fetching sites from Master Service: {}", e.getMessage());
             throw e;
         } catch (ResourceAccessException e) {
-            logger.error("Connection error while fetching sites from master service: {}", e.getMessage());
+            logger.error("Connection error while fetching sites from Master Service: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
-            logger.error("Unexpected error while fetching sites from master service: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to fetch sites from master service", e);
+            logger.error("Unexpected error while fetching sites from Master Service: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to fetch sites from Master Service", e);
         }
+    }
+    
+    private SiteDto convertToSiteDto(Map<String, Object> siteMap) {
+        SiteDto siteDto = new SiteDto();
+        
+        // Map the fields from the Master Service response to SiteDto
+        if (siteMap.containsKey("id")) {
+            siteDto.setSiteId(siteMap.get("id").toString());
+        }
+        if (siteMap.containsKey("name")) {
+            siteDto.setSiteName(siteMap.get("name").toString());
+        }
+        if (siteMap.containsKey("locationCode")) {
+            siteDto.setSiteCode(siteMap.get("locationCode").toString());
+        }
+        if (siteMap.containsKey("active")) {
+            siteDto.setStatus(siteMap.get("active").toString());
+        }
+        if (siteMap.containsKey("city")) {
+            siteDto.setCity(siteMap.get("city").toString());
+        }
+        if (siteMap.containsKey("street")) {
+            siteDto.setStreet(siteMap.get("street").toString());
+        }
+        if (siteMap.containsKey("clusterName")) {
+            siteDto.setClusterName(siteMap.get("clusterName").toString());
+        }
+        if (siteMap.containsKey("clusterId")) {
+            siteDto.setClusterId(siteMap.get("clusterId").toString());
+        }
+        
+        // Map location as combination of city and street
+        String city = siteMap.containsKey("city") ? siteMap.get("city").toString() : "";
+        String street = siteMap.containsKey("street") ? siteMap.get("street").toString() : "";
+        if (!city.isEmpty() || !street.isEmpty()) {
+            siteDto.setLocation((city + " " + street).trim());
+        }
+        
+        // Map timestamp fields if needed
+        if (siteMap.containsKey("logCreatedOn")) {
+            try {
+                String createdOn = siteMap.get("logCreatedOn").toString();
+                // You can parse this to LocalDateTime if needed
+                // For now, we'll just log it
+                logger.debug("Site {} created on: {}", siteDto.getSiteId(), createdOn);
+            } catch (Exception e) {
+                logger.warn("Could not parse logCreatedOn for site {}: {}", siteDto.getSiteId(), e.getMessage());
+            }
+        }
+        
+        return siteDto;
+    }
+    
+    private HttpHeaders createHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/json");
+        headers.set("Accept", "application/json");
+        headers.set("Accept-Language", "en-US,en;q=0.9");
+        headers.set("Connection", "keep-alive");
+        headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36");
+        headers.set("sec-ch-ua", "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Google Chrome\";v=\"138\"");
+        headers.set("sec-ch-ua-mobile", "?0");
+        headers.set("sec-ch-ua-platform", "\"Windows\"");
+        
+        if (bearerToken != null && !bearerToken.isEmpty()) {
+            headers.set("Authorization", "Bearer " + bearerToken);
+        }
+        
+        return headers;
     }
     
     @Retryable(
@@ -93,61 +164,62 @@ public class MasterServiceClient {
         backoff = @Backoff(delay = 1000, multiplier = 2)
     )
     public List<SiteDto> getSitesByCluster(String clusterId) {
-        String url = baseUrl + "/api/sites/cluster/" + clusterId;
-        logger.info("Fetching sites for cluster {} from master service: {}", clusterId, url);
+        String url = baseUrl + "/amsp/api/masterdata/v1/sites";
+        logger.info("Fetching sites for cluster {} from Master Service: {}", clusterId, url);
         
         try {
-            HttpHeaders headers = new HttpHeaders();
-            if (apiKey != null && !apiKey.isEmpty()) {
-                headers.set("X-API-Key", apiKey);
-            }
-            headers.set("Content-Type", "application/json");
-            
+            HttpHeaders headers = createHeaders();
             HttpEntity<String> entity = new HttpEntity<>(headers);
             
-            ResponseEntity<List<SiteDto>> response = restTemplate.exchange(
+            ResponseEntity<List<Map<String, Object>>> response = restTemplate.exchange(
                 url,
                 HttpMethod.GET,
                 entity,
-                new ParameterizedTypeReference<List<SiteDto>>() {}
+                new ParameterizedTypeReference<List<Map<String, Object>>>() {}
             );
             
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                logger.info("Successfully fetched {} sites for cluster {} from master service", 
+                logger.info("Successfully fetched {} sites for cluster {} from Master Service", 
                     response.getBody().size(), clusterId);
-                return response.getBody();
+                
+                // Convert Map to SiteDto objects and filter by cluster if needed
+                List<SiteDto> sites = response.getBody().stream()
+                    .map(this::convertToSiteDto)
+                    .toList();
+                
+                return sites;
             } else {
-                logger.warn("Master service returned non-success status for cluster {}: {}", 
+                logger.warn("Master Service returned non-success status for cluster {}: {}", 
                     clusterId, response.getStatusCode());
                 return List.of();
             }
             
         } catch (HttpClientErrorException e) {
-            logger.error("Client error while fetching sites for cluster {} from master service: {}", 
+            logger.error("Client error while fetching sites for cluster {} from Master Service: {}", 
                 clusterId, e.getMessage());
             throw e;
         } catch (HttpServerErrorException e) {
-            logger.error("Server error while fetching sites for cluster {} from master service: {}", 
+            logger.error("Server error while fetching sites for cluster {} from Master Service: {}", 
                 clusterId, e.getMessage());
             throw e;
         } catch (ResourceAccessException e) {
-            logger.error("Connection error while fetching sites for cluster {} from master service: {}", 
+            logger.error("Connection error while fetching sites for cluster {} from Master Service: {}", 
                 clusterId, e.getMessage());
             throw e;
         } catch (Exception e) {
-            logger.error("Unexpected error while fetching sites for cluster {} from master service: {}", 
+            logger.error("Unexpected error while fetching sites for cluster {} from Master Service: {}", 
                 clusterId, e.getMessage(), e);
-            throw new RuntimeException("Failed to fetch sites for cluster " + clusterId + " from master service", e);
+            throw new RuntimeException("Failed to fetch sites for cluster " + clusterId + " from Master Service", e);
         }
     }
     
     public boolean isServiceHealthy() {
         try {
-            String healthUrl = baseUrl + "/actuator/health";
+            String healthUrl = baseUrl + "/health";
             ResponseEntity<String> response = restTemplate.getForEntity(healthUrl, String.class);
             return response.getStatusCode().is2xxSuccessful();
         } catch (Exception e) {
-            logger.warn("Master service health check failed: {}", e.getMessage());
+            logger.warn("Master Service health check failed: {}", e.getMessage());
             return false;
         }
     }

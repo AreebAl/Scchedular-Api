@@ -11,6 +11,9 @@ public class SiteDto {
     @JsonProperty("siteName")
     private String siteName;
     
+    @JsonProperty("siteCode")
+    private String siteCode;
+    
     @JsonProperty("clusterId")
     private String clusterId;
     
@@ -19,6 +22,12 @@ public class SiteDto {
     
     @JsonProperty("status")
     private String status;
+    
+    @JsonProperty("city")
+    private String city;
+    
+    @JsonProperty("street")
+    private String street;
     
     @JsonProperty("location")
     private String location;
@@ -57,6 +66,14 @@ public class SiteDto {
         this.siteName = siteName;
     }
     
+    public String getSiteCode() {
+        return siteCode;
+    }
+    
+    public void setSiteCode(String siteCode) {
+        this.siteCode = siteCode;
+    }
+    
     public String getClusterId() {
         return clusterId;
     }
@@ -79,6 +96,22 @@ public class SiteDto {
     
     public void setStatus(String status) {
         this.status = status;
+    }
+    
+    public String getCity() {
+        return city;
+    }
+    
+    public void setCity(String city) {
+        this.city = city;
+    }
+    
+    public String getStreet() {
+        return street;
+    }
+    
+    public void setStreet(String street) {
+        this.street = street;
     }
     
     public String getLocation() {
@@ -110,9 +143,12 @@ public class SiteDto {
         return "SiteDto{" +
                 "siteId='" + siteId + '\'' +
                 ", siteName='" + siteName + '\'' +
+                ", siteCode='" + siteCode + '\'' +
                 ", clusterId='" + clusterId + '\'' +
                 ", clusterName='" + clusterName + '\'' +
                 ", status='" + status + '\'' +
+                ", city='" + city + '\'' +
+                ", street='" + street + '\'' +
                 ", location='" + location + '\'' +
                 ", createdDate=" + createdDate +
                 ", lastModifiedDate=" + lastModifiedDate +
