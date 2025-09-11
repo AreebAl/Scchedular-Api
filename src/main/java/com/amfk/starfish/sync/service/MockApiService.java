@@ -13,7 +13,7 @@ public class MockApiService {
     @Autowired
     private JdbcTemplate jdbcTemplate;
     
-    public List<Map<String, Object>> getSiteDetails(String siteName) {
+    public List<Map<String, Object>> getSiteDetails(String clusterName) {
         String sql = """
             SELECT 
                 pc.name AS site,
@@ -29,6 +29,10 @@ public class MockApiService {
             WHERE pnr.active = 1 AND pc.active = 1 AND pc.name = ?
             """;
         
-        return jdbcTemplate.queryForList(sql, siteName);
+        System.out.println("MockApiService: Searching for cluster name: '" + clusterName + "'");
+        List<Map<String, Object>> result = jdbcTemplate.queryForList(sql, clusterName);
+        System.out.println("MockApiService: Found " + result.size() + " records for cluster: '" + clusterName + "'");
+        
+        return result;
     }
 }

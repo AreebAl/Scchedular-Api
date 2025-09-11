@@ -84,10 +84,10 @@ public class SiteSyncService {
                 
                 for (SiteDto site : sites) {
                     try {
-                        logger.info("Processing site: {} ({})", site.getSiteName(), site.getSiteId());
+                        logger.info("Processing site: {} ({}) with cluster: {}", site.getSiteName(), site.getSiteId(), site.getClusterName());
                         
-                        // Call Mock API for site details
-                        List<Map<String, Object>> mockResponse = mockApiService.getSiteDetails(site.getSiteName());
+                        // Call Mock API for site details using cluster name
+                        List<Map<String, Object>> mockResponse = mockApiService.getSiteDetails(site.getClusterName());
                         
                         if (mockResponse != null && !mockResponse.isEmpty()) {
                             logger.info("Successfully retrieved Mock API data for site: {} - Response: {}", 
