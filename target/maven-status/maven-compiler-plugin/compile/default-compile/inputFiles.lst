@@ -2,7 +2,6 @@ C:\Users\Lenovo\Downloads\scheduler\scheduler\src\main\java\com\amfk\starfish\sy
 C:\Users\Lenovo\Downloads\scheduler\scheduler\src\main\java\com\amfk\starfish\sync\controller\MockApiController.java
 C:\Users\Lenovo\Downloads\scheduler\scheduler\src\main\java\com\amfk\starfish\sync\controller\SchedulerController.java
 C:\Users\Lenovo\Downloads\scheduler\scheduler\src\main\java\com\amfk\starfish\sync\dto\SiteDto.java
-C:\Users\Lenovo\Downloads\scheduler\scheduler\src\main\java\com\amfk\starfish\sync\dto\StarfishSiteDto.java
 C:\Users\Lenovo\Downloads\scheduler\scheduler\src\main\java\com\amfk\starfish\sync\entity\JobExecution.java
 C:\Users\Lenovo\Downloads\scheduler\scheduler\src\main\java\com\amfk\starfish\sync\repository\JobExecutionRepository.java
 C:\Users\Lenovo\Downloads\scheduler\scheduler\src\main\java\com\amfk\starfish\sync\SchedulerApplication.java

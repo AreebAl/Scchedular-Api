@@ -62,6 +62,14 @@ public class MasterServiceClient {
             
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 logger.info("Successfully fetched {} sites from Master Service", response.getBody().size());
+                System.out.println("=== MASTER SERVICE API RESPONSE ===");
+                System.out.println("Total sites returned: " + response.getBody().size());
+                System.out.println("First 5 sites:");
+                for (int i = 0; i < Math.min(5, response.getBody().size()); i++) {
+                    Map<String, Object> site = response.getBody().get(i);
+                    System.out.println("Site " + (i+1) + ": " + site.get("name") + " (Cluster: " + site.get("clusterName") + ")");
+                }
+                System.out.println("=================================");
                 
                 // Convert Map to SiteDto objects
                 List<SiteDto> sites = response.getBody().stream()
@@ -126,18 +134,6 @@ public class MasterServiceClient {
             siteDto.setLocation((city + " " + street).trim());
         }
         
-        // Map timestamp fields if needed
-        if (siteMap.containsKey("logCreatedOn")) {
-            try {
-                String createdOn = siteMap.get("logCreatedOn").toString();
-                // You can parse this to LocalDateTime if needed
-                // For now, we'll just log it
-                logger.debug("Site {} created on: {}", siteDto.getSiteId(), createdOn);
-            } catch (Exception e) {
-                logger.warn("Could not parse logCreatedOn for site {}: {}", siteDto.getSiteId(), e.getMessage());
-            }
-        }
-        
         return siteDto;
     }
     
@@ -153,8 +149,6 @@ public class MasterServiceClient {
         return headers;
     }
     
- 
-    
     public boolean isServiceHealthy() {
         try {
             String healthUrl = baseUrl + "/health";
@@ -165,4 +159,4 @@ public class MasterServiceClient {
             return false;
         }
     }
-} 
+}

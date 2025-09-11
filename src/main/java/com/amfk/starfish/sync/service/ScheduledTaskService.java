@@ -65,13 +65,9 @@ public class ScheduledTaskService {
         logger.info("Starting scheduled site sync job at: {}", currentTime);
         
         try {
-            // Execute the site synchronization process asynchronously
-            siteSyncService.syncSitesAsync()
-                .thenAccept(result -> logger.info("Completed scheduled site sync job at: {} with result: {}", currentTime, result))
-                .exceptionally(throwable -> {
-                    logger.error("Scheduled site sync job failed at {}: {}", currentTime, throwable.getMessage(), throwable);
-                    return null;
-                });
+            // Execute the site synchronization process
+            String result = siteSyncService.syncSites();
+            logger.info("Completed scheduled site sync job at: {} with result: {}", currentTime, result);
         } catch (Exception e) {
             logger.error("Scheduled site sync job failed at {}: {}", currentTime, e.getMessage(), e);
         }

@@ -1,10 +1,8 @@
 package com.amfk.starfish.sync.controller;
 
-import com.amfk.starfish.sync.entity.JobExecution;
-
-import com.amfk.starfish.sync.service.ScheduledTaskService;
 import com.amfk.starfish.sync.service.SiteSyncService;
-import com.amfk.starfish.sync.service.StarfishApiClient;
+import com.amfk.starfish.sync.service.MasterServiceClient;
+import com.amfk.starfish.sync.dto.SiteDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,31 +17,27 @@ import java.util.Map;
 @RequestMapping("/api/scheduler")
 public class SchedulerController {
     
-    private final ScheduledTaskService scheduledTaskService;
     private final SiteSyncService siteSyncService;
-    private final StarfishApiClient starfishApiClient;
+    private final MasterServiceClient masterServiceClient;
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
     @Autowired
-    public SchedulerController(ScheduledTaskService scheduledTaskService,
-                              SiteSyncService siteSyncService,
-                              StarfishApiClient starfishApiClient) {
-        this.scheduledTaskService = scheduledTaskService;
+    public SchedulerController(SiteSyncService siteSyncService, MasterServiceClient masterServiceClient) {
         this.siteSyncService = siteSyncService;
-        this.starfishApiClient = starfishApiClient;
+        this.masterServiceClient = masterServiceClient;
     }
     
-    @GetMapping("/starfish/sites")
-    public ResponseEntity<Map<String, Object>> getStarfishSites() {
+    @GetMapping("/sites")
+    public ResponseEntity<Map<String, Object>> getSites() {
         Map<String, Object> response = new HashMap<>();
         String timestamp = LocalDateTime.now().format(formatter);
         
         try {
-            List<Map<String, Object>> sites = starfishApiClient.getSites();
+            List<SiteDto> sites = masterServiceClient.getSites();
             
             if (sites != null) {
                 response.put("status", "success");
-                response.put("message", "Successfully retrieved sites from Starfish API");
+                response.put("message", "Successfully retrieved sites from Master Service API");
                 response.put("sites", sites);
                 response.put("count", sites.size());
                 response.put("timestamp", timestamp);
@@ -51,7 +45,7 @@ public class SchedulerController {
                 return ResponseEntity.ok(response);
             } else {
                 response.put("status", "error");
-                response.put("message", "Failed to retrieve sites from Starfish API - null response");
+                response.put("message", "Failed to retrieve sites from Master Service API - null response");
                 response.put("timestamp", timestamp);
                 
                 return ResponseEntity.internalServerError().body(response);
@@ -59,15 +53,34 @@ public class SchedulerController {
             
         } catch (Exception e) {
             response.put("status", "error");
-            response.put("message", "Failed to retrieve sites from Starfish API: " + e.getMessage());
+            response.put("message", "Failed to retrieve sites from Master Service API: " + e.getMessage());
             response.put("timestamp", timestamp);
             
             return ResponseEntity.internalServerError().body(response);
         }
     }
     
-
-    
-
-
+    @PostMapping("/sync-sites")
+    public ResponseEntity<Map<String, Object>> syncSites() {
+        Map<String, Object> response = new HashMap<>();
+        String timestamp = LocalDateTime.now().format(formatter);
+        
+        try {
+            String result = siteSyncService.syncSites();
+            
+            response.put("status", "success");
+            response.put("message", "Site sync job started successfully");
+            response.put("result", result);
+            response.put("timestamp", timestamp);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "Failed to start site sync job: " + e.getMessage());
+            response.put("timestamp", timestamp);
+            
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
 } 

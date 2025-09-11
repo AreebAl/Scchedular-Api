@@ -1,81 +1,108 @@
 # AMFK Starfish Sync Service
 
-Spring Boot application for synchronizing site data between master services and the Starfish API.
+A simplified Spring Boot application that integrates with the Starfish API to synchronize site data.
 
-## Recent Changes
+## Overview
 
-- Starfish API calls and email notifications temporarily disabled
-- Added endpoint to test Starfish API connectivity: `GET /api/scheduler/starfish/sites`
-- Configured Bearer token authentication for Master Service
-- Updated Master Service URL to: `https://linpubah043.gl.avaya.com:9003`
+This application provides:
+- REST endpoints for Starfish API integration
+- Background sync jobs for Starfish site synchronization  
+- Job tracking and monitoring capabilities
 
-## Configuration
+## Key Features
 
-```properties
-master.service.base.url=https://linpubah043.gl.avaya.com:9003
-master.service.bearer.token=eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJCT1NDSF9VU0VSIiwiQk9TQ0hfQURNSU4iLCJBVkFZQV9BRE1JTiIsIkFWQVlBX0hPVExJTkUiLCJBVkFZQV9PUFMiXSwibmFtZSI6InNoZGh1bWFsIiwibGFuZ3VhZ2UiOiJlbiIsInN1YiI6InNoZGh1bWFsIiwiaWF0IjoxNzU0NTM2NTEzLCJleHAiOjE3NTQ1Mzc0MTN9.YhPp4w39YJD37w3iJymI-krfmFyseIZNYZy0m1zIUWU
-```
+- **Simple API Integration**: Direct integration with Starfish API
+- **Scheduled Jobs**: Automatic site synchronization every 24 hours
+- **Job Tracking**: Database logging of all job executions
+- **Retry Mechanism**: Automatic retry for transient failures
+- **Health Checks**: API health monitoring
 
 ## API Endpoints
 
-### Test Starfish API
-```bash
-GET /api/scheduler/starfish/sites
+### GET /api/scheduler/starfish/sites
+Retrieves all sites from the Starfish API.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Successfully retrieved sites from Starfish API",
+  "sites": [...],
+  "count": 65,
+  "timestamp": "2025-01-11 19:15:11"
+}
 ```
 
-### Trigger Site Sync (POST request)
-```bash
-POST /api/scheduler/site-synch/trigger
+## Configuration
+
+The application uses the following configuration in `application.properties`:
+
+```properties
+# Starfish API Configuration
+starfish.api.base.url=https://linpubah043.gl.avaya.com:9003
+starfish.api.bearer.token=your-bearer-token
+
+# Site Sync Job Configuration
+site.sync.enabled=true
+
+# Database Configuration
+spring.datasource.url=jdbc:mysql://localhost:3306/amsp
+spring.datasource.username=root
+spring.datasource.password=root
 ```
 
-### Check Site Sync Status (GET request)
-```bash
-GET /api/scheduler/site-synch/status
-```
+## How It Works
 
-### Health Check
-```bash
-GET /api/scheduler/health
-```
+1. **Scheduled Execution**: Every 24 hours, the application automatically runs a site sync job
+2. **Master Service API Call**: Fetches all sites from the Master Service API (linpubah043.gl.avaya.com:9003)
+3. **Database Query**: For each site, queries the database using the cluster name to get site details
+4. **Processing**: Logs each site and its database details for monitoring purposes
+5. **Job Tracking**: Records job execution details in the database
+6. **Error Handling**: Retries failed requests and logs errors
 
-## Running
+## API Endpoints
 
-1. Build: `./mvnw clean install`
-2. Run: `./mvnw spring-boot:run`
-3. Test Starfish API: `curl http://localhost:8080/api/scheduler/starfish/sites`
-4. Trigger site sync: `curl -X POST http://localhost:8080/api/scheduler/site-synch/trigger`
-5. Check status: `curl http://localhost:8080/api/scheduler/site-synch/status`
+### GET /api/scheduler/sites
+Retrieves all sites from the Master Service API.
 
-## CURL Reference
-```bash
-curl 'https://linpubah043.gl.avaya.com:9003/amsp/api/masterdata/v1/sites' \
-  -H 'Accept: application/json' \
-  -H 'Accept-Language: en-US,en;q=0.9' \
-  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJCT1NDSF9VU0VSIiwiQk9TQ0hfQURNSU4iLCJBVkFZQV9BRE1JTiIsIkFWQVlBX0hPVExJTkUiLCJBVkFZQV9PUFMiXSwibmFtZSI6InNoZGh1bWFsIiwibGFuZ3VhZ2UiOiJlbiIsInN1YiI6InNoZGh1bWFsIiwiaWF0IjoxNzU0NTM2NTEzLCJleHAiOjE3NTQ1Mzc0MTN9.YhPp4w39YJD37w3iJymI-krfmFyseIZNYZy0m1zIUWU' \
-  -H 'Connection: keep-alive' \
-  -H 'Referer: https://linpubah043.gl.avaya.com:9003/' \
-  -H 'Sec-Fetch-Dest: empty' \
-  -H 'Sec-Fetch-Mode: cors' \
-  -H 'Sec-Fetch-Site: same-origin' \
-  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36' \
-  -H 'sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"' \
-  -H 'sec-ch-ua-mobile: ?0' \
-  -H 'sec-ch-ua-platform: "Windows"'
-```
+### POST /api/scheduler/sync-sites
+Triggers the site sync job (fetches sites + calls Mock API for each).
 
-## Database
+### GET /ProvisioningWebService/sps/v1/site?SiteName={clusterName}
+Queries the database for site details based on cluster name.
 
-MySQL Database Configuration:
-- **Default**: `jdbc:mysql://localhost:3306/amfk_starfish_sync`
-- **Development**: `jdbc:mysql://localhost:3306/amfk_starfish_sync_dev`
-- **Production**: Uses environment variables for connection details
+## Database Schema
 
-### MySQL Setup
-1. Install MySQL Server
-2. Create database: `CREATE DATABASE amfk_starfish_sync;`
-3. Update credentials in `application.properties` or use environment variables
-4. For production, set these environment variables:
-   - `DB_HOST` - MySQL host (default: localhost)
-   - `DB_PORT` - MySQL port (default: 3306)
-   - `DB_USERNAME` - Database username (default: root)
-   - `DB_PASSWORD` - Database password (default: password) 
+The application uses a single table `job_details` to track job executions:
+
+- `job_id`: Unique identifier for each job
+- `job_name`: Name of the job (STARFISH_SYNC_JOB)
+- `status`: Job status (RUNNING, COMPLETED, FAILED)
+- `records_processed`: Number of sites processed
+- `api_response`: JSON response from Starfish API
+- `start_time`, `end_time`, `duration_ms`: Timing information
+
+## Running the Application
+
+1. Ensure MySQL is running on localhost:3306
+2. Create database `amsp` if it doesn't exist
+3. Run the application:
+   ```bash
+   ./mvnw spring-boot:run
+   ```
+
+## Monitoring
+
+- Check application logs for job execution details
+- Query the `job_details` table for job history
+- Use the health check endpoint for API status
+
+## Simplifications Made
+
+This version has been simplified to focus on Starfish API integration with database queries:
+- Removed Master Service integration (using Starfish API directly)
+- Kept Mock API service for database queries based on cluster names
+- Removed CompletableFuture complexity (simplified to synchronous processing)
+- Removed unused DTOs and services
+- Simplified error handling and logging
+- Streamlined the flow: Starfish API → Database Query → Logging
