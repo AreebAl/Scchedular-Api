@@ -4,42 +4,49 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "job_executions")
+@Table(name = "job_details", indexes = {
+    @Index(name = "idx_job_name_create_ts", columnList = "job_name, create_ts"),
+    @Index(name = "idx_status", columnList = "status"),
+    @Index(name = "idx_create_ts", columnList = "create_ts")
+})
 public class JobExecution {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(name = "job_id", nullable = false)
+    @Column(name = "job_id", nullable = false, length = 36, unique = true)
     private String jobId;
     
-    @Column(name = "job_name", nullable = false)
+    @Column(name = "job_name", nullable = false, length = 100)
     private String jobName;
     
-    @Column(name = "status", nullable = false)
+    @Column(name = "status", nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     private JobStatus status;
     
-    @Column(name = "start_time", nullable = false)
+    @Column(name = "start_time", nullable = false, columnDefinition = "DATETIME(6)")
     private LocalDateTime startTime;
     
-    @Column(name = "end_time")
+    @Column(name = "end_time", columnDefinition = "DATETIME(6)")
     private LocalDateTime endTime;
     
-    @Column(name = "duration_ms")
+    @Column(name = "duration_ms", columnDefinition = "BIGINT")
     private Long durationMs;
     
-    @Column(name = "records_processed")
+    @Column(name = "records_processed", columnDefinition = "INT DEFAULT 0")
     private Integer recordsProcessed;
     
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
     
-    @Column(name = "create_ts", nullable = false)
+    @Column(name = "api_response", columnDefinition = "JSON")
+    private String apiResponse;
+    
+    @Column(name = "create_ts", nullable = false, columnDefinition = "DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6)")
     private LocalDateTime createTs;
     
-    @Column(name = "update_ts", nullable = false)
+    @Column(name = "update_ts", nullable = false, columnDefinition = "DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)")
     private LocalDateTime updateTs;
     
     public enum JobStatus {
@@ -134,6 +141,15 @@ public class JobExecution {
     
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
+        this.updateTs = LocalDateTime.now();
+    }
+    
+    public String getApiResponse() {
+        return apiResponse;
+    }
+    
+    public void setApiResponse(String apiResponse) {
+        this.apiResponse = apiResponse;
         this.updateTs = LocalDateTime.now();
     }
     

@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -27,17 +28,20 @@ public class SiteSyncService {
     
     private final MasterServiceClient masterServiceClient;
     // private final StarfishApiClient starfishApiClient;
+    private final MockApiService mockApiService;
     private final JobExecutionRepository jobExecutionRepository;
     // private final JavaMailSender mailSender;
     
     @Autowired
     public SiteSyncService(MasterServiceClient masterServiceClient, 
                           // StarfishApiClient starfishApiClient,
+                          MockApiService mockApiService,
                           JobExecutionRepository jobExecutionRepository
                           // JavaMailSender mailSender
                           ) {
         this.masterServiceClient = masterServiceClient;
         // this.starfishApiClient = starfishApiClient;
+        this.mockApiService = mockApiService;
         this.jobExecutionRepository = jobExecutionRepository;
         // this.mailSender = mailSender;
     }
@@ -67,10 +71,13 @@ public class SiteSyncService {
                 
                 logger.info("Retrieved {} sites from master service", sites.size());
                 
-                // Step 2: For each site, get information from STARFISH
-                // COMMENTED OUT FOR NOW - Starfish API calls disabled
-                /*
-                logger.info("Step 2: Fetching STARFISH information for each site");
+                // Store the Master Service API response in JobExecution
+                String apiResponseJson = convertSitesToJson(sites);
+                jobExecution.setApiResponse(apiResponseJson);
+                jobExecutionRepository.save(jobExecution);
+                
+                // Step 2: For each site, get information from Mock API
+                logger.info("Step 2: Fetching Mock API information for each site");
                 int processedCount = 0;
                 int successCount = 0;
                 int failureCount = 0;
@@ -79,31 +86,25 @@ public class SiteSyncService {
                     try {
                         logger.info("Processing site: {} ({})", site.getSiteName(), site.getSiteId());
                         
-                        // Try to get STARFISH info by site ID first, then by code
-                        StarfishSiteDto starfishSite = starfishApiClient.getSiteInfo(site.getSiteId());
+                        // Call Mock API for site details
+                        List<Map<String, Object>> mockResponse = mockApiService.getSiteDetails(site.getSiteName());
                         
-                        if (starfishSite == null && site.getSiteName() != null) {
-                            // Try by site name/code as fallback
-                            starfishSite = starfishApiClient.getSiteInfoByCode(site.getSiteName());
-                        }
-                        
-                        if (starfishSite != null) {
-                            logger.info("Successfully retrieved STARFISH data for site: {} - Name: {}, Status: {}", 
-                                site.getSiteId(), starfishSite.getName(), starfishSite.getStatus());
+                        if (mockResponse != null && !mockResponse.isEmpty()) {
+                            logger.info("Successfully retrieved Mock API data for site: {} - Response: {}", 
+                                site.getSiteName(), mockResponse);
                             successCount++;
                             
-                            // TODO: Store STARFISH data temporarily (DB design to be discussed)
-                            // For now, just log the data
-                            logger.debug("STARFISH data for site {}: {}", site.getSiteId(), starfishSite);
+                            // Log the mock response data
+                            logger.debug("Mock API data for site {}: {}", site.getSiteName(), mockResponse);
                             
                         } else {
-                            logger.warn("No STARFISH data found for site: {} ({})", site.getSiteName(), site.getSiteId());
+                            logger.warn("No Mock API data found for site: {} ({})", site.getSiteName(), site.getSiteId());
                             failureCount++;
                         }
                         
                         processedCount++;
                         
-                        // Add small delay to avoid overwhelming the STARFISH API
+                        // Add small delay to avoid overwhelming the Mock API
                         Thread.sleep(100);
                         
                     } catch (Exception e) {
@@ -113,20 +114,14 @@ public class SiteSyncService {
                         processedCount++;
                     }
                 }
-                */
                 
-                // For now, just process the sites without calling Starfish API
-                int processedCount = sites.size();
-                int successCount = sites.size();
-                int failureCount = 0;
-                
-                logger.info("Processed {} sites from master service (Starfish API calls disabled)", processedCount);
+                logger.info("Processed {} sites from master service with Mock API calls", processedCount);
                 
                 jobExecution.setRecordsProcessed(processedCount);
                 jobExecution.complete();
                 jobExecutionRepository.save(jobExecution);
                 
-                String result = String.format("Site sync completed successfully. Processed: %d, Success: %d, Failed: %d (Starfish API calls disabled)", 
+                String result = String.format("Site sync completed successfully. Processed: %d, Success: %d, Failed: %d (Mock API calls)", 
                     processedCount, successCount, failureCount);
                 
                 logger.info(result);
@@ -214,15 +209,36 @@ public class SiteSyncService {
     }
     */
     
-    
-    public JobExecution getLastJobExecution() {
-        return jobExecutionRepository.findFirstByJobNameOrderByCreateTsDesc("SITE_SYNC_JOB").orElse(null);
+    private String convertSitesToJson(List<SiteDto> sites) {
+        try {
+            StringBuilder json = new StringBuilder();
+            json.append("{\"sites\":[");
+            
+            for (int i = 0; i < sites.size(); i++) {
+                SiteDto site = sites.get(i);
+                json.append("{");
+                json.append("\"siteId\":\"").append(site.getSiteId() != null ? site.getSiteId() : "").append("\",");
+                json.append("\"siteName\":\"").append(site.getSiteName() != null ? site.getSiteName() : "").append("\",");
+                json.append("\"siteCode\":\"").append(site.getSiteCode() != null ? site.getSiteCode() : "").append("\",");
+                json.append("\"status\":\"").append(site.getStatus() != null ? site.getStatus() : "").append("\",");
+                json.append("\"city\":\"").append(site.getCity() != null ? site.getCity() : "").append("\",");
+                json.append("\"street\":\"").append(site.getStreet() != null ? site.getStreet() : "").append("\",");
+                json.append("\"location\":\"").append(site.getLocation() != null ? site.getLocation() : "").append("\",");
+                json.append("\"clusterName\":\"").append(site.getClusterName() != null ? site.getClusterName() : "").append("\",");
+                json.append("\"clusterId\":\"").append(site.getClusterId() != null ? site.getClusterId() : "").append("\"");
+                json.append("}");
+                
+                if (i < sites.size() - 1) {
+                    json.append(",");
+                }
+            }
+            
+            json.append("]}");
+            return json.toString();
+        } catch (Exception e) {
+            logger.error("Error converting sites to JSON: {}", e.getMessage());
+            return "{\"error\":\"Failed to convert sites to JSON\"}";
+        }
     }
-    
-    public List<JobExecution> getRecentJobExecutions(int limit) {
-        // This would need a custom query in the repository
-        // For now, return the last execution
-        JobExecution last = getLastJobExecution();
-        return last != null ? List.of(last) : List.of();
-    }
+
 } 

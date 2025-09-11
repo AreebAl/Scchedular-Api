@@ -65,7 +65,17 @@ curl 'https://linpubah043.gl.avaya.com:9003/amsp/api/masterdata/v1/sites' \
 
 ## Database
 
-H2 Console: `http://localhost:8080/h2-console`
-- JDBC URL: `jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE`
-- Username: `sa`
-- Password: `password` 
+MySQL Database Configuration:
+- **Default**: `jdbc:mysql://localhost:3306/amfk_starfish_sync`
+- **Development**: `jdbc:mysql://localhost:3306/amfk_starfish_sync_dev`
+- **Production**: Uses environment variables for connection details
+
+### MySQL Setup
+1. Install MySQL Server
+2. Create database: `CREATE DATABASE amfk_starfish_sync;`
+3. Update credentials in `application.properties` or use environment variables
+4. For production, set these environment variables:
+   - `DB_HOST` - MySQL host (default: localhost)
+   - `DB_PORT` - MySQL port (default: 3306)
+   - `DB_USERNAME` - Database username (default: root)
+   - `DB_PASSWORD` - Database password (default: password) 

@@ -1,8 +1,8 @@
 com\amfk\starfish\sync\service\StarfishApiClient.class
-com\amfk\starfish\sync\service\ApiCallService.class
 com\amfk\starfish\sync\dto\StarfishSiteDto.class
 com\amfk\starfish\sync\controller\SchedulerController.class
-com\amfk\starfish\sync\service\MasterServiceClient$2.class
+com\amfk\starfish\sync\controller\MockApiController.class
+com\amfk\starfish\sync\service\MockApiService.class
 com\amfk\starfish\sync\entity\JobExecution$JobStatus.class
 com\amfk\starfish\sync\service\ScheduledTaskService.class
 com\amfk\starfish\sync\dto\SiteDto.class

@@ -1,0 +1,114 @@
+SITE DATA FLOW DIAGRAM
+======================
+
+┌─────────────────┐
+│   USER OPENS    │
+│  ADMIN PORTAL   │
+└─────────┬───────┘
+          │
+          ▼
+┌─────────────────┐
+│  LOAD SITES     │
+│     LIST        │
+└─────────┬───────┘
+          │
+          ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   AMSP CLIENT   │───▶│   AMSP API      │───▶│   SITE DATA     │
+│                 │    │ /amsp/api/...   │    │ id, name, city  │
+└─────────┬───────┘    └─────────────────┘    └─────────┬───────┘
+          │                                            │
+          ▼                                            ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  SITE SERVICE   │◀───│ SITE CONTROLLER │◀───│  ADMIN PORTAL   │
+│                 │    │                 │    │ Display Sites   │
+└─────────┬───────┘    └─────────────────┘    └─────────┬───────┘
+          │                                            │
+          ▼                                            ▼
+┌─────────────────┐                              ┌─────────────┐
+│  SITES DISPLAYED│                              │ USER SELECTS│
+│  IN TABLE/DROPDOWN                            │    SITE     │
+└─────────────────┘                              └─────┬───────┘
+                                                       │
+                                                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ PROVISIONING    │───▶│ PROVISIONING    │───▶│ PROVISIONING    │
+│   SERVICE       │    │    CLIENT       │    │     API         │
+│                 │    │                 │    │ /sps/v1/site... │
+└─────────┬───────┘    └─────────────────┘    └─────────┬───────┘
+          │                                            │
+          ▼                                            ▼
+┌─────────────────┐                              ┌─────────────┐
+│ VALIDATE SITE   │                              │ API RESPONSE│
+│     NAME        │                              │             │
+└─────────┬───────┘                              └─────┬───────┘
+          │                                            │
+          ▼                                            ▼
+    ┌─────────┐                              ┌─────────────┐
+    │ INVALID │                              │   SUCCESS   │
+    │  NAME   │                              │     200     │
+    └────┬────┘                              └─────┬───────┘
+         │                                           │
+         ▼                                           ▼
+┌─────────────────┐                              ┌─────────────┐
+│ ERROR HANDLER   │                              │ SITE DETAILS│
+│                 │                              │ Site, CM,   │
+└─────────┬───────┘                              │ Ranges,     │
+          │                                      │ Extensions  │
+          ▼                                      └─────┬───────┘
+┌─────────────────┐                                     │
+│ SHOW ERROR      │                                     ▼
+│   MESSAGE       │                              ┌─────────────┐
+│                 │                              │ DISPLAY IN  │
+└─────────┬───────┘                              │ ADMIN TABLE │
+          │                                      └─────┬───────┘
+          ▼                                            │
+    ┌─────────┐                                        ▼
+    │   END   │◀─────────────────────────────────┌─────────────┐
+    └─────────┘                                  │    END      │
+                                                 └─────────────┘
+
+ERROR PATHS:
+============
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│ 400 BAD     │    │ 404 NOT     │    │ 500 SERVER  │
+│ REQUEST     │    │ FOUND       │    │ ERROR       │
+└─────┬───────┘    └─────┬───────┘    └─────┬───────┘
+      │                  │                  │
+      └──────────────────┼──────────────────┘
+                         │
+                         ▼
+                 ┌─────────────┐
+                 │ ERROR       │
+                 │ HANDLER     │
+                 └─────┬───────┘
+                       │
+                       ▼
+                 ┌─────────────┐
+                 │ SHOW ERROR  │
+                 │ MESSAGE     │
+                 └─────┬───────┘
+                       │
+                       ▼
+                 ┌─────────────┐
+                 │     END     │
+                 └─────────────┘
+
+API ENDPOINTS:
+==============
+1. AMSP API: GET /amsp/api/masterdata/v1/sites
+   Response: Array of Site objects (id, name, city, clusterName, etc.)
+
+2. Provisioning API: GET /sps/v1/site?SiteName={SiteName}
+   Response: ProvisioningSite object (Site, CM, Ranges, Extensions)
+
+COMPONENTS:
+===========
+- AMSP Client: HTTP client for AMSP API
+- Site Service: Business logic for site operations
+- Site Controller: REST endpoints
+- Provisioning Service: Business logic for provisioning
+- Provisioning Client: HTTP client for Provisioning API
+- Error Handler: Centralized error management
+- Admin Portal: User interface
+

@@ -35,6 +35,7 @@ public class MasterServiceClient {
     
     @Value("${master.service.timeout:30000}")
     private int timeout;
+
     
     public MasterServiceClient(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
@@ -47,7 +48,6 @@ public class MasterServiceClient {
     )
     public List<SiteDto> getSites() {
         String url = baseUrl + "/amsp/api/masterdata/v1/sites";
-        logger.info("Fetching sites from Master Service: {}", url);
         
         try {
             HttpHeaders headers = createHeaders();
@@ -88,6 +88,7 @@ public class MasterServiceClient {
             throw new RuntimeException("Failed to fetch sites from Master Service", e);
         }
     }
+
     
     private SiteDto convertToSiteDto(Map<String, Object> siteMap) {
         SiteDto siteDto = new SiteDto();
@@ -144,12 +145,6 @@ public class MasterServiceClient {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Content-Type", "application/json");
         headers.set("Accept", "application/json");
-        headers.set("Accept-Language", "en-US,en;q=0.9");
-        headers.set("Connection", "keep-alive");
-        headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36");
-        headers.set("sec-ch-ua", "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Google Chrome\";v=\"138\"");
-        headers.set("sec-ch-ua-mobile", "?0");
-        headers.set("sec-ch-ua-platform", "\"Windows\"");
         
         if (bearerToken != null && !bearerToken.isEmpty()) {
             headers.set("Authorization", "Bearer " + bearerToken);
@@ -158,60 +153,7 @@ public class MasterServiceClient {
         return headers;
     }
     
-    @Retryable(
-        value = {HttpServerErrorException.class, ResourceAccessException.class},
-        maxAttempts = 3,
-        backoff = @Backoff(delay = 1000, multiplier = 2)
-    )
-    public List<SiteDto> getSitesByCluster(String clusterId) {
-        String url = baseUrl + "/amsp/api/masterdata/v1/sites";
-        logger.info("Fetching sites for cluster {} from Master Service: {}", clusterId, url);
-        
-        try {
-            HttpHeaders headers = createHeaders();
-            HttpEntity<String> entity = new HttpEntity<>(headers);
-            
-            ResponseEntity<List<Map<String, Object>>> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                entity,
-                new ParameterizedTypeReference<List<Map<String, Object>>>() {}
-            );
-            
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                logger.info("Successfully fetched {} sites for cluster {} from Master Service", 
-                    response.getBody().size(), clusterId);
-                
-                // Convert Map to SiteDto objects and filter by cluster if needed
-                List<SiteDto> sites = response.getBody().stream()
-                    .map(this::convertToSiteDto)
-                    .toList();
-                
-                return sites;
-            } else {
-                logger.warn("Master Service returned non-success status for cluster {}: {}", 
-                    clusterId, response.getStatusCode());
-                return List.of();
-            }
-            
-        } catch (HttpClientErrorException e) {
-            logger.error("Client error while fetching sites for cluster {} from Master Service: {}", 
-                clusterId, e.getMessage());
-            throw e;
-        } catch (HttpServerErrorException e) {
-            logger.error("Server error while fetching sites for cluster {} from Master Service: {}", 
-                clusterId, e.getMessage());
-            throw e;
-        } catch (ResourceAccessException e) {
-            logger.error("Connection error while fetching sites for cluster {} from Master Service: {}", 
-                clusterId, e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            logger.error("Unexpected error while fetching sites for cluster {} from Master Service: {}", 
-                clusterId, e.getMessage(), e);
-            throw new RuntimeException("Failed to fetch sites for cluster " + clusterId + " from Master Service", e);
-        }
-    }
+ 
     
     public boolean isServiceHealthy() {
         try {
