@@ -71,6 +71,9 @@ public class SiteSyncService {
                 
                 logger.info("Retrieved {} sites from master service", sites.size());
                 
+                // Check what clusters are available in the database
+                mockApiService.checkAvailableClusters();
+                
                 // Store the Master Service API response in JobExecution
                 String apiResponseJson = convertSitesToJson(sites);
                 jobExecution.setApiResponse(apiResponseJson);

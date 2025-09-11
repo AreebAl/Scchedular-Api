@@ -35,4 +35,15 @@ public class MockApiService {
         
         return result;
     }
+    
+    public void checkAvailableClusters() {
+        String sql = "SELECT DISTINCT name FROM amsp.pbx_cluster WHERE active = 1";
+        List<Map<String, Object>> clusters = jdbcTemplate.queryForList(sql);
+        System.out.println("=== AVAILABLE CLUSTERS IN DATABASE ===");
+        for (Map<String, Object> cluster : clusters) {
+            System.out.println("Cluster: " + cluster.get("name"));
+        }
+        System.out.println("Total clusters found: " + clusters.size());
+        System.out.println("=====================================");
+    }
 }
