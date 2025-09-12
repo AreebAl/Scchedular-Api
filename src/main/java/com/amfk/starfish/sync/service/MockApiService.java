@@ -17,6 +17,7 @@ public class MockApiService {
         String sql = """
             SELECT 
                 pc.name AS cluster_name,
+                pc.name AS site,
                 pc.id_pbx AS cm,
                 pt.name AS type,
                 pnr.range_from AS lowerbound,
@@ -30,11 +31,10 @@ public class MockApiService {
               AND (
                     TRIM(LOWER(pc.name)) = TRIM(LOWER(?))
                  OR TRIM(LOWER(pc.id_pbx)) = TRIM(LOWER(?))
-                 OR TRIM(pc.id_cluster::text) = TRIM(?)
               )
             """;   
         System.out.println("MockApiService: Searching for cluster name: '" + clusterName + "'");
-        List<Map<String, Object>> result = jdbcTemplate.queryForList(sql, clusterName, clusterName, clusterName);
+        List<Map<String, Object>> result = jdbcTemplate.queryForList(sql, clusterName, clusterName);
         System.out.println("MockApiService: Found " + result.size() + " records for cluster: '" + clusterName + "'");
         
         return result;
