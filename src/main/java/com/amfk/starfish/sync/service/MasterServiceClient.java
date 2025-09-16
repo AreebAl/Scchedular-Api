@@ -11,11 +11,14 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
+import org.springframework.retry.annotation.Recover;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.apache.hc.core5.http.TruncatedChunkException;
 
 import java.util.List;
 import java.util.Map;
@@ -41,10 +44,17 @@ public class MasterServiceClient {
         this.restTemplate = restTemplate;
     }
     
+    /**
+     * Fetches all sites from the Master Service.
+     * Expected dataset size: ~471 records
+     * This method includes retry logic for handling TruncatedChunkException
+     * and other network-related issues common with large responses.
+     */
     @Retryable(
-        value = {HttpServerErrorException.class, ResourceAccessException.class},
-        maxAttempts = 3,
-        backoff = @Backoff(delay = 1000, multiplier = 2)
+        value = {HttpServerErrorException.class, ResourceAccessException.class, RestClientException.class, 
+                org.springframework.http.converter.HttpMessageNotReadableException.class},
+        maxAttempts = 5,
+        backoff = @Backoff(delay = 2000, multiplier = 2, maxDelay = 30000)
     )
     public List<SiteDto> getSites() {
         String url = baseUrl + "/amsp/api/masterdata/v1/sites";
@@ -61,13 +71,23 @@ public class MasterServiceClient {
             );
             
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                logger.info("Successfully fetched {} sites from Master Service", response.getBody().size());
+                int siteCount = response.getBody().size();
+                logger.info("Successfully fetched {} sites from Master Service", siteCount);
+                
+                // Log performance metrics for large datasets
+                if (siteCount > 100) {
+                    logger.info("Processing large dataset: {} sites - this may take longer", siteCount);
+                }
+                
                 System.out.println("=== MASTER SERVICE API RESPONSE ===");
-                System.out.println("Total sites returned: " + response.getBody().size());
+                System.out.println("Total sites returned: " + siteCount);
                 System.out.println("First 5 sites:");
                 for (int i = 0; i < Math.min(5, response.getBody().size()); i++) {
                     Map<String, Object> site = response.getBody().get(i);
                     System.out.println("Site " + (i+1) + ": " + site.get("name") + " (Cluster: " + site.get("clusterName") + ")");
+                }
+                if (siteCount > 5) {
+                    System.out.println("... and " + (siteCount - 5) + " more sites");
                 }
                 System.out.println("=================================");
                 
@@ -91,10 +111,27 @@ public class MasterServiceClient {
         } catch (ResourceAccessException e) {
             logger.error("Connection error while fetching sites from Master Service: {}", e.getMessage());
             throw e;
+        } catch (RestClientException e) {
+            // Check if this is a TruncatedChunkException
+            if (isTruncatedChunkException(e)) {
+                logger.warn("Truncated chunk error while fetching sites from Master Service (will retry): {}", e.getMessage());
+            } else {
+                logger.error("Rest client error while fetching sites from Master Service: {}", e.getMessage());
+            }
+            throw e;
         } catch (Exception e) {
             logger.error("Unexpected error while fetching sites from Master Service: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to fetch sites from Master Service", e);
         }
+    }
+    
+    /**
+     * Recovery method for retry failures
+     */
+    @Recover
+    public List<SiteDto> recover(Exception ex) {
+        logger.error("All retry attempts failed for getSites. Last error: {}", ex.getMessage(), ex);
+        throw new RuntimeException("Failed to fetch sites from Master Service after all retry attempts", ex);
     }
 
     
@@ -141,6 +178,9 @@ public class MasterServiceClient {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Content-Type", "application/json");
         headers.set("Accept", "application/json");
+        headers.set("Accept-Encoding", "gzip, deflate");
+        headers.set("Connection", "keep-alive");
+        headers.set("Cache-Control", "no-cache");
         
         if (bearerToken != null && !bearerToken.isEmpty()) {
             headers.set("Authorization", "Bearer " + bearerToken);
@@ -158,5 +198,19 @@ public class MasterServiceClient {
             logger.warn("Master Service health check failed: {}", e.getMessage());
             return false;
         }
+    }
+    
+    /**
+     * Checks if the given exception is caused by a TruncatedChunkException
+     */
+    private boolean isTruncatedChunkException(Exception e) {
+        Throwable cause = e;
+        while (cause != null) {
+            if (cause instanceof TruncatedChunkException) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 }

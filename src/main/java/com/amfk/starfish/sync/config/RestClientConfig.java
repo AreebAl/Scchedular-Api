@@ -4,7 +4,12 @@ import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
+import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
 import org.apache.hc.core5.util.Timeout;
+import org.apache.hc.core5.http.config.Registry;
+import org.apache.hc.core5.http.config.RegistryBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,10 +31,10 @@ public class RestClientConfig {
     @Value("${rest.client.connection.timeout:30000}")
     private int connectionTimeout;
     
-    @Value("${rest.client.read.timeout:60000}")
+    @Value("${rest.client.read.timeout:300000}")
     private int readTimeout;
     
-    @Value("${rest.client.max.connections:50}")
+    @Value("${rest.client.max.connections:100}")
     private int maxConnections;
     
     @Value("${rest.client.truststore.path:}")
@@ -46,13 +51,25 @@ public class RestClientConfig {
     }
     
     private CloseableHttpClient httpClient() {
-        PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
+        // Create socket factory registry
+        Registry<ConnectionSocketFactory> socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
+                .register("http", PlainConnectionSocketFactory.getSocketFactory())
+                .register("https", SSLConnectionSocketFactory.getSystemSocketFactory())
+                .build();
+        
+        PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager(socketFactoryRegistry);
         connectionManager.setMaxTotal(maxConnections);
         connectionManager.setDefaultMaxPerRoute(maxConnections / 2);
+        
+        // Configure connection pool for large responses
+        connectionManager.setValidateAfterInactivity(org.apache.hc.core5.util.Timeout.ofMilliseconds(5000));
         
         RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectTimeout(Timeout.ofMilliseconds(connectionTimeout))
                 .setResponseTimeout(Timeout.ofMilliseconds(readTimeout))
+                .setConnectionRequestTimeout(Timeout.ofMilliseconds(connectionTimeout))
+                .setCircularRedirectsAllowed(true)
+                .setMaxRedirects(3)
                 .build();
         
         CloseableHttpClient httpClient = HttpClients.custom()

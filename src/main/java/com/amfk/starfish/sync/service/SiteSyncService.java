@@ -1,8 +1,6 @@
 package com.amfk.starfish.sync.service;
 
 import com.amfk.starfish.sync.dto.SiteDto;
-import com.amfk.starfish.sync.entity.JobExecution;
-import com.amfk.starfish.sync.repository.JobExecutionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +10,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 public class SiteSyncService {
@@ -22,25 +19,16 @@ public class SiteSyncService {
     
     private final MasterServiceClient masterServiceClient;
     private final MockApiService mockApiService;
-    private final JobExecutionRepository jobExecutionRepository;
     
     @Autowired
     public SiteSyncService(MasterServiceClient masterServiceClient,
-                          MockApiService mockApiService,
-                          JobExecutionRepository jobExecutionRepository) {
+                          MockApiService mockApiService) {
         this.masterServiceClient = masterServiceClient;
         this.mockApiService = mockApiService;
-        this.jobExecutionRepository = jobExecutionRepository;
     }
     
     public String syncSites() {
-        String jobId = UUID.randomUUID().toString();
-        String jobName = "SITE_SYNC_JOB";
-        
-        JobExecution jobExecution = new JobExecution(jobId, jobName);
-        jobExecutionRepository.save(jobExecution);
-        
-        logger.info("Starting site sync job with ID: {}", jobId);
+        logger.info("Starting site sync job");
         
         try {
             // Step 1: Fetch sites from Master Service API
@@ -49,9 +37,6 @@ public class SiteSyncService {
             
             if (sites == null || sites.isEmpty()) {
                 logger.warn("No sites found in Master Service API");
-                jobExecution.setRecordsProcessed(0);
-                jobExecution.complete();
-                jobExecutionRepository.save(jobExecution);
                 return "Site sync completed - no sites found";
             }
             
@@ -104,10 +89,6 @@ public class SiteSyncService {
             
             logger.info("Processed {} sites from Master Service API with Mock API calls", processedCount);
             
-            jobExecution.setRecordsProcessed(processedCount);
-            jobExecution.complete();
-            jobExecutionRepository.save(jobExecution);
-            
             String result = String.format("Site sync completed successfully. Processed: %d, Success: %d, Failed: %d (Mock API calls)", 
                 processedCount, successCount, failureCount);
             
@@ -115,11 +96,7 @@ public class SiteSyncService {
             return result;
             
         } catch (Exception e) {
-            logger.error("Site sync job failed with ID {}: {}", jobId, e.getMessage(), e);
-            
-            jobExecution.fail(e.getMessage());
-            jobExecutionRepository.save(jobExecution);
-            
+            logger.error("Site sync job failed: {}", e.getMessage(), e);
             throw new RuntimeException("Site sync job failed", e);
         }
     }

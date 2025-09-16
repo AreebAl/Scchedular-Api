@@ -73,14 +73,11 @@ Queries the database for site details based on cluster name.
 
 ## Database Schema
 
-The application uses a single table `job_details` to track job executions:
+The application uses a simple database setup for storing site and cluster information:
 
-- `job_id`: Unique identifier for each job
-- `job_name`: Name of the job (STARFISH_SYNC_JOB)
-- `status`: Job status (RUNNING, COMPLETED, FAILED)
-- `records_processed`: Number of sites processed
-- `api_response`: JSON response from Starfish API
-- `start_time`, `end_time`, `duration_ms`: Timing information
+- Site data is fetched from the Master Service API
+- Cluster information is stored locally for Mock API calls
+- No persistent job tracking is implemented
 
 ## Running the Application
 
@@ -94,8 +91,8 @@ The application uses a single table `job_details` to track job executions:
 ## Monitoring
 
 - Check application logs for job execution details
-- Query the `job_details` table for job history
 - Use the health check endpoint for API status
+- Monitor scheduled task execution through logs
 
 ## Simplifications Made
 
