@@ -5,23 +5,20 @@ import java.time.LocalDateTime;
 
 public class SiteDto {
     
-    @JsonProperty("siteId")
-    private String siteId;
+    @JsonProperty("id")
+    private Integer id;
     
-    @JsonProperty("siteName")
-    private String siteName;
+    @JsonProperty("name")
+    private String name;
     
-    @JsonProperty("siteCode")
-    private String siteCode;
+    @JsonProperty("nameEnglish")
+    private String nameEnglish;
     
-    @JsonProperty("clusterId")
-    private String clusterId;
+    @JsonProperty("nameGerman")
+    private String nameGerman;
     
-    @JsonProperty("clusterName")
-    private String clusterName;
-    
-    @JsonProperty("status")
-    private String status;
+    @JsonProperty("locationCode")
+    private String locationCode;
     
     @JsonProperty("city")
     private String city;
@@ -29,73 +26,104 @@ public class SiteDto {
     @JsonProperty("street")
     private String street;
     
-    @JsonProperty("location")
+    @JsonProperty("remark")
+    private String remark;
+    
+    @JsonProperty("active")
+    private Integer active;
+    
+    @JsonProperty("logCreatedBy")
+    private String logCreatedBy;
+    
+    @JsonProperty("logCreatedOn")
+    private LocalDateTime logCreatedOn;
+    
+    @JsonProperty("logUpdatedBy")
+    private String logUpdatedBy;
+    
+    @JsonProperty("logUpdatedOn")
+    private LocalDateTime logUpdatedOn;
+    
+    @JsonProperty("clusterName")
+    private String clusterName;
+    
+    @JsonProperty("clusterId")
+    private Integer clusterId;
+    
+    @JsonProperty("sipDomain")
+    private String sipDomain;
+    
+    @JsonProperty("routingPolicy")
+    private String routingPolicy;
+    
+    @JsonProperty("cmName")
+    private String cmName;
+    
+    @JsonProperty("notes")
+    private String notes;
+    
+    @JsonProperty("ars")
+    private String ars;
+    
+    @JsonProperty("userStamp")
+    private String userStamp;
+    
+    @JsonProperty("timeStamp")
+    private LocalDateTime timeStamp;
+    
+    // Computed fields
     private String location;
-    
-    @JsonProperty("createdDate")
-    private LocalDateTime createdDate;
-    
-    @JsonProperty("lastModifiedDate")
-    private LocalDateTime lastModifiedDate;
     
     // Default constructor
     public SiteDto() {}
     
     // Constructor with required fields
-    public SiteDto(String siteId, String siteName, String clusterId, String clusterName) {
-        this.siteId = siteId;
-        this.siteName = siteName;
-        this.clusterId = clusterId;
+    public SiteDto(Integer id, String name, String clusterName, Integer clusterId) {
+        this.id = id;
+        this.name = name;
         this.clusterName = clusterName;
+        this.clusterId = clusterId;
     }
     
     // Getters and Setters
-    public String getSiteId() {
-        return siteId;
+    public Integer getId() {
+        return id;
     }
     
-    public void setSiteId(String siteId) {
-        this.siteId = siteId;
+    public void setId(Integer id) {
+        this.id = id;
     }
     
-    public String getSiteName() {
-        return siteName;
+    public String getName() {
+        return name;
     }
     
-    public void setSiteName(String siteName) {
-        this.siteName = siteName;
+    public void setName(String name) {
+        this.name = name;
     }
     
-    public String getSiteCode() {
-        return siteCode;
+    public String getNameEnglish() {
+        return nameEnglish;
     }
     
-    public void setSiteCode(String siteCode) {
-        this.siteCode = siteCode;
+    public void setNameEnglish(String nameEnglish) {
+        this.nameEnglish = nameEnglish;
     }
     
-    public String getClusterId() {
-        return clusterId;
+    public String getNameGerman() {
+        return nameGerman;
     }
     
-    public void setClusterId(String clusterId) {
-        this.clusterId = clusterId;
+    public void setNameGerman(String nameGerman) {
+        this.nameGerman = nameGerman;
     }
     
-    public String getClusterName() {
-        return clusterName;
+    public String getLocationCode() {
+        return locationCode;
     }
     
-    public void setClusterName(String clusterName) {
-        this.clusterName = clusterName;
-    }
-    
-    public String getStatus() {
-        return status;
-    }
-    
-    public void setStatus(String status) {
-        this.status = status;
+    public void setLocationCode(String locationCode) {
+        this.locationCode = locationCode;
     }
     
     public String getCity() {
@@ -114,6 +142,126 @@ public class SiteDto {
         this.street = street;
     }
     
+    public String getRemark() {
+        return remark;
+    }
+    
+    public void setRemark(String remark) {
+        this.remark = remark;
+    }
+    
+    public Integer getActive() {
+        return active;
+    }
+    
+    public void setActive(Integer active) {
+        this.active = active;
+    }
+    
+    public String getLogCreatedBy() {
+        return logCreatedBy;
+    }
+    
+    public void setLogCreatedBy(String logCreatedBy) {
+        this.logCreatedBy = logCreatedBy;
+    }
+    
+    public LocalDateTime getLogCreatedOn() {
+        return logCreatedOn;
+    }
+    
+    public void setLogCreatedOn(LocalDateTime logCreatedOn) {
+        this.logCreatedOn = logCreatedOn;
+    }
+    
+    public String getLogUpdatedBy() {
+        return logUpdatedBy;
+    }
+    
+    public void setLogUpdatedBy(String logUpdatedBy) {
+        this.logUpdatedBy = logUpdatedBy;
+    }
+    
+    public LocalDateTime getLogUpdatedOn() {
+        return logUpdatedOn;
+    }
+    
+    public void setLogUpdatedOn(LocalDateTime logUpdatedOn) {
+        this.logUpdatedOn = logUpdatedOn;
+    }
+    
+    public String getClusterName() {
+        return clusterName;
+    }
+    
+    public void setClusterName(String clusterName) {
+        this.clusterName = clusterName;
+    }
+    
+    public Integer getClusterId() {
+        return clusterId;
+    }
+    
+    public void setClusterId(Integer clusterId) {
+        this.clusterId = clusterId;
+    }
+    
+    public String getSipDomain() {
+        return sipDomain;
+    }
+    
+    public void setSipDomain(String sipDomain) {
+        this.sipDomain = sipDomain;
+    }
+    
+    public String getRoutingPolicy() {
+        return routingPolicy;
+    }
+    
+    public void setRoutingPolicy(String routingPolicy) {
+        this.routingPolicy = routingPolicy;
+    }
+    
+    public String getCmName() {
+        return cmName;
+    }
+    
+    public void setCmName(String cmName) {
+        this.cmName = cmName;
+    }
+    
+    public String getNotes() {
+        return notes;
+    }
+    
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+    
+    public String getArs() {
+        return ars;
+    }
+    
+    public void setArs(String ars) {
+        this.ars = ars;
+    }
+    
+    public String getUserStamp() {
+        return userStamp;
+    }
+    
+    public void setUserStamp(String userStamp) {
+        this.userStamp = userStamp;
+    }
+    
+    public LocalDateTime getTimeStamp() {
+        return timeStamp;
+    }
+    
+    public void setTimeStamp(LocalDateTime timeStamp) {
+        this.timeStamp = timeStamp;
+    }
+    
     public String getLocation() {
         return location;
     }
@@ -122,36 +270,37 @@ public class SiteDto {
         this.location = location;
     }
     
-    public LocalDateTime getCreatedDate() {
-        return createdDate;
+    // Convenience methods for backward compatibility
+    public String getSiteId() {
+        return id != null ? id.toString() : null;
     }
     
-    public void setCreatedDate(LocalDateTime createdDate) {
-        this.createdDate = createdDate;
+    public String getSiteName() {
+        return name;
     }
     
-    public LocalDateTime getLastModifiedDate() {
-        return lastModifiedDate;
+    public String getSiteCode() {
+        return locationCode;
     }
     
-    public void setLastModifiedDate(LocalDateTime lastModifiedDate) {
-        this.lastModifiedDate = lastModifiedDate;
+    public String getStatus() {
+        return active != null ? (active == 1 ? "ACTIVE" : "INACTIVE") : null;
     }
     
     @Override
     public String toString() {
         return "SiteDto{" +
-                "siteId='" + siteId + '\'' +
-                ", siteName='" + siteName + '\'' +
-                ", siteCode='" + siteCode + '\'' +
-                ", clusterId='" + clusterId + '\'' +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", locationCode='" + locationCode + '\'' +
+                ", clusterId=" + clusterId +
                 ", clusterName='" + clusterName + '\'' +
-                ", status='" + status + '\'' +
+                ", active=" + active +
                 ", city='" + city + '\'' +
                 ", street='" + street + '\'' +
                 ", location='" + location + '\'' +
-                ", createdDate=" + createdDate +
-                ", lastModifiedDate=" + lastModifiedDate +
+                ", logCreatedOn=" + logCreatedOn +
+                ", logUpdatedOn=" + logUpdatedOn +
                 '}';
     }
 }

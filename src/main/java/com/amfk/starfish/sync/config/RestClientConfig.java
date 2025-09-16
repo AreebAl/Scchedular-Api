@@ -75,6 +75,8 @@ public class RestClientConfig {
         CloseableHttpClient httpClient = HttpClients.custom()
                 .setConnectionManager(connectionManager)
                 .setDefaultRequestConfig(requestConfig)
+                .setUserAgent("AMFK-Starfish-Sync/1.0")
+                .disableContentCompression() // Disable compression to avoid truncation issues
                 .build();
         
         // Configure SSL if truststore is provided
